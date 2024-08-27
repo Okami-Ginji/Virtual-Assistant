@@ -1,0 +1,12 @@
+﻿<Application x:Class="VirtualAssistant.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:VirtualAssistant"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <!-- Disable FocusVisualStyle globally -->
+        <Style TargetType="{x:Type Control}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+    </Application.Resources>
+</Application>
