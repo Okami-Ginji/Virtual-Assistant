@@ -75,7 +75,10 @@ namespace VirtualAssistant
             CultureInfo japaneseCulture = new CultureInfo("ja-JP");
             speech.SelectVoiceByHints(VoiceGender.Female, VoiceAge.NotSet,0, japaneseCulture);
 
-            
+            // Đăng ký sự kiện SpeakStarted và SpeakCompleted
+            speech.SpeakStarted += new EventHandler<SpeakStartedEventArgs>(speech_SpeakStarted);
+            speech.SpeakCompleted += new EventHandler<SpeakCompletedEventArgs>(speech_SpeakCompleted);
+
             //recEngine.RecognizeAsync(RecognizeMode.Multiple);
             Welcome();
 
@@ -176,8 +179,15 @@ namespace VirtualAssistant
             }
             else if (question.ToLower().Contains("day"))
             {
-                result = "Today's date is " + dateTime.ToLongDateString();
-            }
+                ChineseLunisolarCalendar lunarCalendar = new ChineseLunisolarCalendar();
+
+                int lunarYear = lunarCalendar.GetYear(dateTime);
+                int lunarMonth = lunarCalendar.GetMonth(dateTime);
+                int lunarDay = lunarCalendar.GetDayOfMonth(dateTime);
+
+                result = "Today's date is " + dateTime.DayOfWeek + " " + dateTime.ToLongDateString() + "\n"
+                    + $"Lunar Date: {lunarYear}/{lunarMonth}/{lunarDay}" + "\n";
+            }         
             else if (question.ToLower().Contains("open google"))                
             {
                 System.Diagnostics.Process.Start("https://www.google.com/");
@@ -258,12 +268,23 @@ namespace VirtualAssistant
             //speech.SpeakSsml(ssmlText);
         }
 
-        private void Welcome()
+        private async void Welcome()
         {
+            await WelcomeAsync();
+        }
+
+        private async Task WelcomeAsync()
+        {
+            // Chờ cho việc tải dữ liệu hoàn tất
+            await LoadDataAsync();
+
+            // Sau khi hoàn tất tải, phát lời chào
             response_Answer("chào");
-            // Đăng ký sự kiện SpeakStarted và SpeakCompleted
-            speech.SpeakStarted += new EventHandler<SpeakStartedEventArgs>(speech_SpeakStarted);
-            speech.SpeakCompleted += new EventHandler<SpeakCompletedEventArgs>(speech_SpeakCompleted);
+        }
+
+        private async Task LoadDataAsync()
+        {           
+            await Task.Delay(1000); 
         }
 
         // Thêm tin nhắn vào khung chat
@@ -366,26 +387,24 @@ namespace VirtualAssistant
 
             try
             {
-                var response = await client.ExecuteAsync(request);
-
-                Console.WriteLine($"Status Code: {response.StatusCode}");
-                Console.WriteLine($"Response Content: {response.Content}");
+                var response = await client.ExecuteAsync(request);            
 
                 if (response.IsSuccessful)
                 {
                     // Phân tích phản hồi JSON
                     dynamic weatherData = Newtonsoft.Json.JsonConvert.DeserializeObject(response.Content);
-                    string weather = weatherData.weather[0].description;
-                    string temperature = weatherData.main.temp;
-                    string humidity = weatherData.main.humidity;
-                    string tempMax = weatherData.main.temp_max;
-                    string tempMin = weatherData.main.temp_min;
+
+                    string weather = weatherData["weather"]?[0]?["description"]?.ToString() ?? "N/A";
+                    string temperature = weatherData["main"]?["temp"]?.ToString() ?? "N/A";
+                    string humidity = weatherData["main"]?["humidity"]?.ToString() ?? "N/A";
+                    string windSpeed = weatherData["wind"]?["speed"]?.ToString() ?? "N/A";
+                    string pressure = weatherData["main"]?["pressure"]?.ToString() ?? "N/A";
 
                     return $"Weather: {weather}\n" +
-                           $"Temperature: {temperature} °C\n" +
+                           $"Temperature: {temperature}°C\n" +
                            $"Humidity: {humidity}%\n" +
-                           $"Max Temperature: {tempMax} °C\n" +
-                           $"Min Temperature: {tempMin} °C";
+                           $"Wind Speed: {windSpeed} m/s\n" +
+                           $"Pressure: {pressure}hPa\n";
                 }
                 else
                 {

@@ -60,7 +60,7 @@
 
                 <!-- Hình ảnh nằm bên phải -->
                 <Border Grid.Column="1" CornerRadius="10"  BorderThickness="2" Margin="5,60,10,10" Background="White">
-                    <Image x:Name="image" gif:AnimationBehavior.SourceUri="/talk.gif"  HorizontalAlignment="Center" Height="378" VerticalAlignment="Center" Width="488" Source="/Talk.gif"/>
+                    <Image x:Name="image" gif:AnimationBehavior.SourceUri="/normal.gif"  HorizontalAlignment="Center" Height="378" VerticalAlignment="Center" Width="488" Source="/Talk.gif"/>
                 </Border>
             </Grid>
 
