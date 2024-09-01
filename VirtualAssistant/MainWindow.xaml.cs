@@ -33,6 +33,7 @@ using RestSharp;
 using System.Text.RegularExpressions;
 using Bogus.DataSets;
 using XamlAnimatedGif;
+using System.Windows.Threading;
 
 namespace VirtualAssistant
 {
@@ -44,6 +45,8 @@ namespace VirtualAssistant
         SpeechRecognitionEngine recEngine =  new SpeechRecognitionEngine();
         System.Speech.Synthesis.SpeechSynthesizer speech =  new System.Speech.Synthesis.SpeechSynthesizer();
         System.Media.SoundPlayer music = new System.Media.SoundPlayer();
+        private DispatcherTimer _dispatcherTimer;
+        private int _counter = 0;
         private const string ApiKey = "89fd93095607a248283be133f5405724"; 
         private Timer recognitionTimer;
         private bool isListening = false;
@@ -77,7 +80,7 @@ namespace VirtualAssistant
 
             // Đăng ký sự kiện SpeakStarted và SpeakCompleted
             speech.SpeakStarted += new EventHandler<SpeakStartedEventArgs>(speech_SpeakStarted);
-            speech.SpeakCompleted += new EventHandler<SpeakCompletedEventArgs>(speech_SpeakCompleted);
+            speech.SpeakCompleted += new EventHandler<SpeakCompletedEventArgs>(speech_SpeakCompleted);          
 
             //recEngine.RecognizeAsync(RecognizeMode.Multiple);
             Welcome();
@@ -179,14 +182,7 @@ namespace VirtualAssistant
             }
             else if (question.ToLower().Contains("day"))
             {
-                ChineseLunisolarCalendar lunarCalendar = new ChineseLunisolarCalendar();
-
-                int lunarYear = lunarCalendar.GetYear(dateTime);
-                int lunarMonth = lunarCalendar.GetMonth(dateTime);
-                int lunarDay = lunarCalendar.GetDayOfMonth(dateTime);
-
-                result = "Today's date is " + dateTime.DayOfWeek + " " + dateTime.ToLongDateString() + "\n"
-                    + $"Lunar Date: {lunarYear}/{lunarMonth}/{lunarDay}" + "\n";
+                result = GetDate(dateTime);
             }         
             else if (question.ToLower().Contains("open google"))                
             {
@@ -266,6 +262,25 @@ namespace VirtualAssistant
             //        </voice>
             //    </speak>";
             //speech.SpeakSsml(ssmlText);
+        }
+
+        private String GetDate(DateTime dateTime)
+        {
+            ChineseLunisolarCalendar lunarCalendar = new ChineseLunisolarCalendar();
+
+            int lunarYear = lunarCalendar.GetYear(dateTime);
+            int lunarMonth = lunarCalendar.GetMonth(dateTime);
+            int lunarDay = lunarCalendar.GetDayOfMonth(dateTime);
+
+            string message = $"Today's date is {dateTime.DayOfWeek} {dateTime.Year}/{dateTime.Month}/{dateTime.Day}\n"
+               + $"Lunar Date: {lunarYear}/{lunarMonth}/{lunarDay}\n";
+
+            if (lunarCalendar.GetDayOfMonth(dateTime.AddDays(2)) == 1 || lunarCalendar.GetDayOfMonth(dateTime.AddDays(2)) == 15)
+            {
+                message += "Remember to send the message to your friend.";
+            }
+            return message;
+            
         }
 
         private async void Welcome()
@@ -427,12 +442,49 @@ namespace VirtualAssistant
         {
             // Đổi nguồn của GIF khi hoàn tất việc đọc
             ChangeGifSource("/normal.gif");
+            DispatcherTimer();
+
         }
         private void ChangeGifSource(string source)
         {
             var gifSource = new Uri(source, UriKind.Relative);
             AnimationBehavior.SetSourceUri(image, gifSource);
         }
+
+        private void DispatcherTimer()
+        {
+            if (_dispatcherTimer == null)
+            {
+                _dispatcherTimer = new DispatcherTimer();
+                _dispatcherTimer.Interval = TimeSpan.FromSeconds(1);
+                _dispatcherTimer.Tick += DispatcherTimer_Tick;
+            }
+
+            // Reset the counter and start the timer
+            _counter = 0;
+            _dispatcherTimer.Start();
+        }
+
+        private void DispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            _counter++;
+
+            if(_counter == 50)
+            {
+                StopTimer();
+                ChangeGifSource("/rest.gif");
+            }
+        }
+
+        private void StopTimer()
+        {
+            if (_dispatcherTimer != null)
+            {
+                _dispatcherTimer.Stop();
+            }
+            
+        }
+
         private int GetRandomNumber(int minValue, int maxValue)
         {
             // Tạo đối tượng Random
